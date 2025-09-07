@@ -10,7 +10,7 @@ app.use(urlencoded({limit: "16kb"}))
 app.use(cookieParser());
 app.use(express.static("public"))
 app.use(cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: process.env.CORS_ORIGIN || "*",
     credentials: true,
 }));
 app.use(
