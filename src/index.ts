@@ -10,7 +10,7 @@ app.on("error", (err)=>{
 })
 connectDB().then(() => {
   app.listen(port, () => {
-    console.log("App started listening on: ", port);
+    console.log("App started listening on: ", `http://localhost:${port}`);
   });
 }).catch((err) => {
   console.error("MongoDB Connection Failed! ", err);

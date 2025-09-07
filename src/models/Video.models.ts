@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 export interface IVideo extends Document {
   thumbnail: string;
   owner: mongoose.Types.ObjectId;
@@ -29,5 +29,6 @@ const videoSchema = new Schema<IVideo>(
   },
   { timestamps: true },
 );
+videoSchema.plugin(mongooseAggregatePaginate);
 
 export const Video = mongoose.model<IVideo>("Video", videoSchema);
