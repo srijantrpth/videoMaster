@@ -85,7 +85,7 @@ userSchema.methods.generateAccessToken = function (): string {
   return jwt.sign(payload, secret, options);
 };
 
-userSchema.methods.generateRefreshToken = function (): string {
+userSchema.methods.generateRefreshToken = function(): string {
   const payload = {
     _id: this._id,
   };
