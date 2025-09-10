@@ -4,6 +4,25 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Request, Response } from "express";
 import { ApiError } from "../utils/ApiError.js";
+import mongoose from "mongoose";
+const generateAccessAndRefreshTokens = async function (userId: mongoose.Types.ObjectId) {
+  try {
+    const user = await User.findById(userId);
+    if(!user){
+      throw new ApiError(404, "User not found! ");
+    }
+    const accessToken = user?.generateAccessToken();
+    const refreshToken = user?.generateRefreshToken();
+    user.refreshToken = refreshToken;
+    user.save();
+    return [accessToken, refreshToken]
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while generating access and refresh tokens! ",
+    );
+  }
+};
 
 export const registerUser = asyncHandler(
   async (req: Request, res: Response) => {
@@ -52,7 +71,7 @@ export const registerUser = asyncHandler(
       username: username?.toLowerCase(),
     });
     console.log(`User created: `, user);
-    
+
     const createdUser = await User.findById(user._id).select(
       "-password -refreshToken",
     );
@@ -64,7 +83,29 @@ export const registerUser = asyncHandler(
     }
     return res
       .status(201)
-      .json(new ApiResponse(201, "User creation Successful! ", createdUser));
+      .json(new ApiResponse(201, "User registered successfully!", createdUser));
   },
 );
 
+export const loginUser = asyncHandler(async (req: Request, res: Response) => {
+  const { username, password, email } = req.body;
+  if (!username || !email) {
+    throw new ApiError(400, "Username or email required! ");
+  }
+  const user = await User.findOne<IUser>({
+    $or: [{ username }, { email }],
+  });
+  if (!user) {
+    throw new ApiError(400, "User not found! ");
+  }
+  const isPasswordValid = await user.isPasswordCorrect(password);
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid credentials! ");
+  }
+});
+
+// get details from frontend
+// validate data done by zod
+// check in DB
+// verify password via bcrypt
+// if yes generate access and refreshToken and send to user in cookies

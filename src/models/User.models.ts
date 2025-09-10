@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import jwt, { SignOptions } from "jsonwebtoken";  // Import SignOptions type
+import jwt, { SignOptions } from "jsonwebtoken"; // Import SignOptions type
 import bcrypt from "bcrypt";
 
 export interface IUser extends Document {
@@ -9,10 +9,13 @@ export interface IUser extends Document {
   avatar?: string;
   password: string;
   refreshToken?: string;
-  watchHistory: mongoose.Types.ObjectId[];  // Fixed: should be array, not tuple
+  watchHistory: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
   fullName: string;
+  isPasswordCorrect(password: string): Promise<boolean>;
+  generateAccessToken(): string;
+  generateRefreshToken(): string;
 }
 
 const userSchema = new Schema<IUser>(
@@ -51,7 +54,8 @@ const userSchema = new Schema<IUser>(
         ref: "Video",
       },
     ],
-    fullName: {  // Fixed: should be object for consistency
+    fullName: {
+      // Fixed: should be object for consistency
       type: String,
       required: true,
     },
@@ -76,25 +80,25 @@ userSchema.methods.generateAccessToken = function (): string {
     username: this.username,
     fullName: this.fullName,
   };
-  
+
   const secret = process.env.ACCESS_TOKEN_SECRET!;
   const options: SignOptions = {
     expiresIn: process.env.ACCESS_TOKEN_EXPIRY!,
   };
-  
+
   return jwt.sign(payload, secret, options);
 };
 
-userSchema.methods.generateRefreshToken = function(): string {
+userSchema.methods.generateRefreshToken = function (): string {
   const payload = {
     _id: this._id,
   };
-  
+
   const secret = process.env.REFRESH_TOKEN_SECRET!;
   const options: SignOptions = {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRY!,
   };
-  
+
   return jwt.sign(payload, secret, options);
 };
 
