@@ -5,17 +5,20 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Request, Response } from "express";
 import { ApiError } from "../utils/ApiError.js";
 import mongoose from "mongoose";
-const generateAccessAndRefreshTokens = async function (userId: mongoose.Types.ObjectId) {
+import { options } from "../constants.js";
+const generateAccessAndRefreshTokens = async function (
+  userId: mongoose.Types.ObjectId,
+) {
   try {
     const user = await User.findById(userId);
-    if(!user){
+    if (!user) {
       throw new ApiError(404, "User not found! ");
     }
     const accessToken = user?.generateAccessToken();
     const refreshToken = user?.generateRefreshToken();
     user.refreshToken = refreshToken;
-    user.save();
-    return [accessToken, refreshToken]
+    await user.save({ validateBeforeSave: false });
+    return { accessToken, refreshToken };
   } catch (error) {
     throw new ApiError(
       500,
@@ -87,25 +90,60 @@ export const registerUser = asyncHandler(
   },
 );
 
-export const loginUser = asyncHandler(async (req: Request, res: Response) => {
-  const { username, password, email } = req.body;
-  if (!username || !email) {
-    throw new ApiError(400, "Username or email required! ");
-  }
-  const user = await User.findOne<IUser>({
-    $or: [{ username }, { email }],
-  });
-  if (!user) {
-    throw new ApiError(400, "User not found! ");
-  }
-  const isPasswordValid = await user.isPasswordCorrect(password);
-  if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid credentials! ");
-  }
-});
+export const loginUser = asyncHandler(
+  async (req: Request, res: Response): Promise<any> => {
+    const { username, password, email } = req.body;
+    if (!username && !email) {
+      throw new ApiError(400, "Username or email required! ");
+    }
+    const user = await User.findOne<IUser>({
+      $or: [
+        { username: username?.toLowerCase() },
+        { email: email?.toLowerCase() },
+      ],
+    });
+    if (!user) {
+      throw new ApiError(404, "User does not exist! ");
+    }
+    const isPasswordValid: boolean = await user.isPasswordCorrect(password);
+    if (!isPasswordValid) {
+      throw new ApiError(401, "Invalid credentials! ");
+    }
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+      user._id as mongoose.Types.ObjectId,
+    );
+    const updatedUser = User.findById<IUser>(user._id).select(
+      "-password -refreshToken",
+    );
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(200, "User Logged in successfully! ", {
+          user: updatedUser,
+          accessToken,
+          refreshToken,
+        }),
+      );
+  },
+);
 
-// get details from frontend
-// validate data done by zod
-// check in DB
-// verify password via bcrypt
-// if yes generate access and refreshToken and send to user in cookies
+export const logoutUser = asyncHandler(async (req: Request, res: Response) => {
+  await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      new: true,
+    },
+  );
+  return res
+    .status(200)
+    .clearCookie("accessToken")
+    .clearCookie("refreshToken")
+    .json(new ApiResponse(200, "User Logged Out! "));
+});
