@@ -15,7 +15,7 @@ connectDB()
       console.log("App started listening on: ", `http://localhost:${port}`);
     });
   })
-  .catch((err) => {
+  .catch((err) => {z
     console.error("MongoDB Connection Failed! ", err);
     process.exit(1);
   });
