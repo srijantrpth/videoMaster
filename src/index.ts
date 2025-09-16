@@ -1,10 +1,16 @@
+import 'dotenv/config';  // Load dotenv globally
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({
+  path: path.resolve(__dirname, "../.env"), // Absolute path to root/.env
+});
+
 import { connectDB } from "./db/db.js";
 import { app } from "./app.js";
 
-dotenv.config({
-  path: "./src/.env",
-});
+
 const port: number = parseInt(process.env.PORT || "3000", 10);
 app.on("error", (err) => {
   console.error("Express App Error: ", err);
