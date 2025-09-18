@@ -59,7 +59,7 @@ const userSchema = new Schema<IUser>(
     fullName: {
       // Fixed: should be object for consistency
       type: String,
-      required: true,
+      required: false,
     },
   },
   { timestamps: true },
