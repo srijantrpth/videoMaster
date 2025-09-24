@@ -192,3 +192,6 @@ Issues and PRs are welcome. Before submitting, please:
 - Run the app locally and add tests or examples where applicable
 - Keep code formatted with Prettier
 - Follow the existing project conventions
+
+## TODOS
+Delete old images from Cloudinary
