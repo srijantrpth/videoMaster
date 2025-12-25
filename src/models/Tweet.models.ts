@@ -1,4 +1,11 @@
 import mongoose, { Schema } from "mongoose";
+import { Document } from "mongoose";
+export interface ITweet extends Document{
+content: string,
+owner: mongoose.Types.ObjectId,
+createdAt: Date,
+updatedAt: Date
+}
 const tweetSchema = new Schema(
   {
     content: {
@@ -13,4 +20,4 @@ const tweetSchema = new Schema(
   { timestamps: true },
 );
 
-const tweet = mongoose.model("Tweet", tweetSchema);
+export const Tweet = mongoose.model("Tweet", tweetSchema);
