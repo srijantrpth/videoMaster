@@ -6,12 +6,12 @@ import cookieParser from "cookie-parser"
 const app = express();
 const morganFormat = ":method :url :status :response-time ms";
 app.use(express.json());
-app.use(urlencoded({limit: "16kb", extended: true}))
+app.use(urlencoded({ limit: "16kb", extended: true }))
 app.use(cookieParser());
 app.use(express.static("public"))
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || "*",
-    credentials: true,
+  origin: process.env.CORS_ORIGIN || "*",
+  credentials: true,
 }));
 app.use(
   morgan(morganFormat, {
@@ -34,12 +34,12 @@ app.use(
 // Routes
 
 import userRouter from "./routes/user.routes.js";
-
+import tweetRouter from './routes/tweet.routes.js'
 // Routes Declaration
 
 app.use("/api/v1/users", userRouter)
+app.use("/api/v1/tweets", tweetRouter)
 
 
 
-
-export {app};
+export { app };

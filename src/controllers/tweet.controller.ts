@@ -23,7 +23,7 @@ const createTweet = asyncHandler(async (req: Request, res: Response): Promise<an
 })
 
 const getUserTweets = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user?._id)
+    const { userId } = req.params
     if (!user) {
         throw new ApiError(400, "User not Found! ");
     }
