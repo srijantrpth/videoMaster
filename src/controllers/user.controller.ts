@@ -114,7 +114,7 @@ export const loginUser = asyncHandler(
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
       user._id as mongoose.Types.ObjectId,
     );
-    const updatedUser = User.findById<IUser>(user._id).select(
+    const updatedUser = await User.findById<IUser>(user._id).select(
       "-password -refreshToken",
     );
     return res

@@ -5,7 +5,7 @@ import { Request, Response } from "express"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { ApiError } from "../utils/ApiError.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
-import mongoose, { isValidObjectId } from "mongoose"
+import { isValidObjectId } from "mongoose"
 
 const createTweet = asyncHandler(async (req: Request, res: Response): Promise<any> => {
     const { content } = req.body;
@@ -24,14 +24,17 @@ const createTweet = asyncHandler(async (req: Request, res: Response): Promise<an
 
 const getUserTweets = asyncHandler(async (req, res) => {
     const { userId } = req.params
+    
+    const user = await User.findOne({username: userId});
+    
     if (!user) {
         throw new ApiError(400, "User not Found! ");
     }
-    //    const tweets = await Tweet.find({owner: req.user?._id}).populate('owner', '-password').sort({createdAt: -1})
+    //    const tweets = await Tweet.find({owner: userId}).populate('owner', '-password').sort({createdAt: -1})
     const tweets = await Tweet.aggregate([
         {
             $match: {
-                owner: new mongoose.Types.ObjectId(req.user?._id)
+                owner: user._id
             }
         },
         {
@@ -67,20 +70,27 @@ const getUserTweets = asyncHandler(async (req, res) => {
 
 
 const updateTweet = asyncHandler(async (req, res) => {
-    //TODO: update tweet
     const { tweetId } = req.params;
     const { content } = req.body;
+    const userId = req.user?._id;
     if (!isValidObjectId(tweetId)) {
         throw new ApiError(404, "Invalid Tweet ID! ");
     }
-    const tweet = await Tweet.findByIdAndUpdate(tweetId, {
-        $set: {
-            content
-        }
-    }, { new: true });
-    if (!tweet) {
+   const tweet = await Tweet.findById(tweetId);
+   if (!tweet) {
         throw new ApiError(500, "Unable to update tweet! ");
     }
+   if(tweet.owner.equals(userId)){
+    throw new ApiError(400, "This tweet does not belong to the signed in user! ");
+
+   }
+   if(!content){
+    throw new ApiError(400, "Empty content! ")
+   }
+   tweet.content = content || tweet.content;
+   await tweet.save({validateBeforeSave: false});
+
+    
     return res.status(200).json(new ApiResponse(201, "Tweet Updated Successfully! ", tweet));
 })
 
