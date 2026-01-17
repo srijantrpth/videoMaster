@@ -1,5 +1,12 @@
 import mongoose, { Schema } from "mongoose";
-
+import { Document } from "mongoose";
+export interface ILike extends Document{
+  video?: mongoose.Types.ObjectId,
+  comment?: mongoose.Types.ObjectId,
+  tweet?: mongoose.Types.ObjectId,
+  likedBy: mongoose.Types.ObjectId,
+ 
+}
 const likeSchema = new Schema(
   {
     video: {
@@ -22,4 +29,4 @@ const likeSchema = new Schema(
   { timestamps: true },
 );
 
-export const Like = mongoose.model("Like", likeSchema);
+export const Like = mongoose.model<ILike>("Like", likeSchema);

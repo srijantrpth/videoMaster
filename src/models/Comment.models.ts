@@ -1,5 +1,10 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
+export interface IComment extends Document{
+  content: string;
+  video: mongoose.Types.ObjectId;
+  owner: mongoose.Types.ObjectId;
+}
 const commentSchema = new Schema(
   {
     content: {
@@ -21,4 +26,4 @@ const commentSchema = new Schema(
 
 commentSchema.plugin(mongooseAggregatePaginate);
 
-const comment = mongoose.model("Comment", commentSchema);
+export const Comment = mongoose.model<IComment>("Comment", commentSchema);
