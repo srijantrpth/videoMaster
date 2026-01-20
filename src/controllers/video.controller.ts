@@ -8,9 +8,32 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 import mongoose, { Mongoose, isValidObjectId } from "mongoose"
 
 export const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
-
-
+    const { page = 1, limit = 10, query = "", sortBy = "createdAt", sortType = "desc", userId } = req.query
+    
+    const pageNum = parseInt(page as string, 10) || 1
+    const limitNum = parseInt(limit as string, 10) || 10
+    
+    const pipeline = [
+        {
+            $match: {
+                isPublished: true,
+                ...(userId && { owner: new mongoose.Types.ObjectId(userId as string) }),
+                ...(query && { title: { $regex: query as string, $options: "i" } })
+            }
+        },
+        {
+            $sort: {
+                [sortBy as string]: sortType === "asc" ? 1 : -1
+            }
+        }
+    ]
+    
+    const results = await Video.aggregatePaginate(
+        Video.aggregate(pipeline),
+        { page: pageNum, limit: limitNum }
+    )
+    
+    return res.status(200).json(new ApiResponse(200, "Videos fetched successfully!", results))
 })
 
 export const publishAVideo = asyncHandler(async (req, res) => {
@@ -62,8 +85,8 @@ export const getVideoById = asyncHandler(async (req, res) => {
         $inc: {
             views: 1
         }
-    },{new: true})
-    
+    }, { new: true })
+
     if (!video) {
         throw new ApiError(404, "Video not found! ")
     }
