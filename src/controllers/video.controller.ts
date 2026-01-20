@@ -1,48 +1,103 @@
-import {User, IUser} from "../models/User.models.js"
+import { User, IUser } from "../models/User.models.js"
 import { Video, IVideo } from "../models/Video.models.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { Request, Response } from "express"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { ApiError } from "../utils/ApiError.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
-import { Mongoose, isValidObjectId } from "mongoose"
+import mongoose, { Mongoose, isValidObjectId } from "mongoose"
 
-const getAllVideos = asyncHandler(async (req, res) => {
+export const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
-    //TODO: get all videos based on query, sort, pagination
-    
+
+
 })
 
-const publishAVideo = asyncHandler(async (req, res) => {
-    const { title, description} = req.body
-    // TODO: get video, upload to cloudinary, create video
+export const publishAVideo = asyncHandler(async (req, res) => {
+    const { title, description } = req.body
+    const userId = req.user?._id
+    const files = req.files as { [fieldName: string]: Express.Multer.File[] } | undefined;
+    if ([title, description].some((field) => field === "")) {
+        throw new ApiError(400, "Title or Description is Empty! All fields are required! ")
+    }
+    const videoFileLocalPath: string | undefined = files?.videoFile?.[0]?.path
+    const thumbnailLocalPath: string | undefined = files?.thumbnail?.[0]?.path
+    if (!videoFileLocalPath) {
+        throw new ApiError(400, "Video file is required! ");
+    }
+    if (!thumbnailLocalPath) {
+        throw new ApiError(400, "Thumbnail file is required! ");
+    }
+
+    const videoFile = await uploadOnCloudinary(videoFileLocalPath);
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+    if (!videoFile) {
+        throw new ApiError(500, "Failed to upload video file on cloudinary! ");
+    }
+    if (!thumbnail) {
+        throw new ApiError(500, "Failed to upload thumbnail on cloudinary! ");
+    }
+    const video = await Video.create({
+        owner: new mongoose.Types.ObjectId(userId),
+        title,
+        description,
+        videoFile: videoFile.url || "",
+        thumbnail: thumbnail.url || "",
+
+    })
+    if (!video) {
+        throw new ApiError(500, "Unable to create video! ")
+    }
+    return res.status(201).json(new ApiResponse(201, "Video created successfully! ", video));
+
+
 })
 
-const getVideoById = asyncHandler(async (req, res) => {
+export const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    //TODO: get video by id
 })
 
-const updateVideo = asyncHandler(async (req, res) => {
+export const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    //TODO: update video details like title, description, thumbnail
+
 
 })
 
-const deleteVideo = asyncHandler(async (req, res) => {
+export const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    //TODO: delete video
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video ID! ")
+    }
+    const video = await Video.findByIdAndDelete(videoId)
+
+    if (!video)
+        if (!video.owner.toString() !== req.user?._id) {
+            throw new ApiError(403, "User not authorized to update the video! ")
+        } {
+        throw new ApiError(500, "Unable to delete video! ")
+    }
+    return res.status(200).json(new ApiResponse(200, "Video deleted successfully! ", video))
 })
 
-const togglePublishStatus = asyncHandler(async (req, res) => {
+export const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video ID! ")
+    }
+
+
+    const video = await Video.findById(videoId)
+    if (!video) {
+        throw new ApiError(404, "Video does not exist! ")
+    }
+
+    if (!video.owner.toString() !== req.user?._id) {
+        throw new ApiError(403, "User not authorized to update the video! ")
+    }
+    video.isPublished = !video.isPublished
+    await video.save()
+    return res.status(200).json(new ApiResponse(200, "Video Status Updated Successfully! ", video))
+
 })
 
-export {
-    getAllVideos,
-    publishAVideo,
-    getVideoById,
-    updateVideo,
-    deleteVideo,
-    togglePublishStatus
-}
+
