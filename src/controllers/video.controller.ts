@@ -55,11 +55,49 @@ export const publishAVideo = asyncHandler(async (req, res) => {
 
 export const getVideoById = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid Video Id! ");
+    }
+    const video = await Video.findByIdAndUpdate(videoId, {
+        $inc: {
+            views: 1
+        }
+    },{new: true})
+    
+    if (!video) {
+        throw new ApiError(404, "Video not found! ")
+    }
+    return res.status(200).json(new ApiResponse(200, "Video found successfully! ", video))
 })
 
 export const updateVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
+    const userId = req.user?._id
+    const file = req.file as Express.Multer.File | undefined;
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid Video ID! ")
+    }
 
+    const { title, description } = req.body;
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(404, "Video not found! ");
+
+    }
+    if (video.owner.toString() != userId) {
+        throw new ApiError(403, "You are not authorized to update this video! ")
+    }
+    const thumbnailLocalPath: string | undefined = req.file?.path
+    if (!thumbnailLocalPath) {
+        throw new ApiError(400, "Thumbnail file is required! ");
+    }
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+
+    video.title = title;
+    video.description = description
+    video.thumbnail = thumbnail?.url || "";
+    await video.save();
+    return res.status(204).json(new ApiResponse(204, "Video updated successfully! ", video))
 
 })
 
