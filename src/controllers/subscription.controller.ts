@@ -33,7 +33,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     }
     else {
         const deletedSubscription = await Subscription.findByIdAndDelete(existingSubscription._id);
-        return res.status(200).json(new ApiResponse(200, "Subscription Deleted Successfully! "));
+        return res.status(200).json(new ApiResponse(200, "Subscription Deleted Successfully! ", deletedSubscription));
 
     }
 })
@@ -101,7 +101,7 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
             }
         }
     ])
-    return res.status(200).json(new ApiResponse(200, "Fetched Subscribed Channels", result[0]));
+    return res.status(200).json(new ApiResponse(200, "Fetched Subscribed Channels", result));
 
 })
 
